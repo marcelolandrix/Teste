@@ -1170,5 +1170,108 @@ mostrarPerfis();
 mostrarRascunho();
 
 </script>
+
+<style>
+:root{--ink:#193e44;--teal:#087e88;--soft:#eaf5f4}
+body{background:#f5f8fa;color:var(--ink);padding-bottom:90px}
+header{position:sticky;top:0;z-index:10;text-align:left;padding:14px 20px;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border-bottom:1px solid #e3eeee}
+header h1{font-size:24px;letter-spacing:-.7px}
+header small{font-size:11px}
+main{max-width:760px;padding:18px 16px 100px}
+main>.notice{font-size:11px;background:#fff8e9;border:1px solid #f4e5bd;padding:10px 13px;margin-bottom:16px}
+#menu{display:none!important}
+section{border:0;border-radius:24px;padding:20px;box-shadow:0 5px 24px rgba(16,71,79,.06);margin:12px 0}
+section h2{font-size:27px;letter-spacing:-.8px}
+.summary{border-radius:18px;background:var(--soft);padding:18px;align-items:center}
+.summary strong{font-size:26px;letter-spacing:-.6px}
+.card{border:1px solid #e6eeee;border-radius:18px;padding:16px}
+button{min-height:44px;border-radius:13px}
+.primary{background:var(--teal);color:white}
+input,select,textarea{border-radius:13px;min-height:45px}
+#cc-bottom{position:fixed;bottom:0;left:0;right:0;z-index:30;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:rgba(255,255,255,.96);backdrop-filter:blur(18px);border-top:1px solid #dce8e9;padding:8px 5px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -5px 25px #1a56610d}
+#cc-bottom button{min-width:0;border:0;background:transparent;color:#667e83;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 0;font-size:10px;min-height:48px;border-radius:12px}
+#cc-bottom button b{font-size:20px;font-weight:500;line-height:1.1}
+#cc-bottom button.active{color:var(--teal);background:#e7f4f3}
+#cc-submenu{position:fixed;z-index:29;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));background:white;border:1px solid #dce8e9;border-radius:22px;box-shadow:0 12px 35px #173d4840;padding:12px;max-width:480px;margin:auto}
+#cc-submenu[hidden]{display:none}
+#cc-submenu button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #edf2f2;border-radius:0;padding:13px;font-weight:600;color:var(--ink)}
+#cc-submenu button:last-child{border:0}
+@media(min-width:760px){#cc-bottom{max-width:760px;margin:auto;border-radius:22px 22px 0 0}}
+</style>
+
+<nav id="cc-bottom" aria-label="Navegação principal">
+<button type="button" data-go="dia" class="active"><b>⌂</b><span>Início</span></button>
+<button type="button" data-go="biblioteca"><b>▤</b><span>Alimentos</span></button>
+<button type="button" data-go="voz"><b>⊕</b><span>Registrar</span></button>
+<button type="button" data-group="evolucao"><b>▥</b><span>Evolução</span></button>
+<button type="button" data-group="ajustes"><b>⚙</b><span>Ajustes</span></button>
+</nav>
+
+<div id="cc-submenu" hidden></div>
+
+<script>
+(function(){
+'use strict';
+const barra=document.getElementById('cc-bottom');
+const menu=document.getElementById('cc-submenu');
+const grupos={
+evolucao:[
+['historico','Histórico e gráficos'],
+['linha','Linha do tempo']
+],
+ajustes:[
+['metas','Metas'],
+['perfis','Perfis'],
+['referencias','Referências'],
+['backup','Backup']
+]
+};
+
+function marcar(id){
+ const grupo=['historico','linha'].includes(id)
+ ?'evolucao'
+ :['metas','perfis','referencias','backup'].includes(id)
+ ?'ajustes':id;
+ barra.querySelectorAll('button').forEach(b=>
+ b.classList.toggle('active',
+ b.dataset.go===grupo||b.dataset.group===grupo));
+}
+
+function navegar(id){
+ menu.hidden=true;
+ aba(id);
+ marcar(id);
+}
+
+barra.querySelectorAll('[data-go]').forEach(b=>
+ b.addEventListener('click',()=>navegar(b.dataset.go)));
+
+barra.querySelectorAll('[data-group]').forEach(b=>
+ b.addEventListener('click',()=>{
+ const grupo=b.dataset.group;
+ if(!menu.hidden&&menu.dataset.grupo===grupo){
+ menu.hidden=true;
+ return;
+ }
+ menu.dataset.grupo=grupo;
+ menu.innerHTML='';
+ grupos[grupo].forEach(([id,nome])=>{
+  const item=document.createElement('button');
+  item.type='button';
+  item.textContent=nome;
+  item.addEventListener('click',()=>navegar(id));
+  menu.appendChild(item);
+ });
+ menu.hidden=false;
+}));
+
+const original=window.aba;
+window.aba=function(id){
+ original(id);
+ marcar(id);
+ menu.hidden=true;
+};
+})();
+</script>
 </body>
 </html>
