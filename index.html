@@ -1273,5 +1273,286 @@ window.aba=function(id){
 };
 })();
 </script>
+
+<!-- CarbCare V3.2 — Módulo experimental de bolus -->
+<style>
+#cc-lab-bolus {
+  background: #fff;
+  border-radius: 24px;
+  padding: 20px;
+  margin: 12px 0;
+  box-shadow: 0 5px 24px rgba(16,71,79,.06);
+}
+#cc-lab-bolus h2 {
+  font-size: 25px;
+  margin-bottom: 12px;
+}
+#cc-lab-bolus .cc-alerta {
+  background: #fff6e7;
+  border: 1px solid #eed8a8;
+  border-radius: 14px;
+  padding: 13px;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+#cc-lab-bolus label {
+  display: block;
+  margin: 14px 0 5px;
+  font-size: 14px;
+  font-weight: 600;
+}
+#cc-lab-bolus input {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d4e2e4;
+  border-radius: 12px;
+  font-size: 16px;
+}
+#cc-lab-bolus button {
+  width: 100%;
+  background: #087e88;
+  color: white;
+  border: 0;
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 20px;
+  font-size: 16px;
+  font-weight: 600;
+}
+#cc-lab-resultado {
+  background: #eaf5f4;
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 16px;
+  line-height: 1.6;
+}
+#cc-lab-resultado[hidden] {
+  display: none;
+}
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  // Cria a tela sem modificar os registros existentes.
+  const main = document.querySelector('main');
+  if (!main || document.getElementById('cc-lab-bolus')) {
+    return;
+  }
+
+  const secao = document.createElement('section');
+  secao.id = 'cc-lab-bolus';
+  secao.hidden = true;
+
+  secao.innerHTML = `
+    <h2>Bolus experimental</h2>
+
+    <div class="cc-alerta">
+      <strong>Laboratório de simulação</strong>
+      <p>
+        Use somente dados fictícios. Este módulo
+        demonstra uma operação matemática, não
+        calcula doses para uso clínico e não deve
+        orientar a administração de insulina.
+      </p>
+    </div>
+
+    <label for="cc-lab-carb">
+      Carboidratos fictícios (g)
+    </label>
+    <input id="cc-lab-carb"
+      type="number" min="0" step="0.1"
+      inputmode="decimal" placeholder="Ex.: 45">
+
+    <label for="cc-lab-razao">
+      Relação fictícia (g por unidade)
+    </label>
+    <input id="cc-lab-razao"
+      type="number" min="0.1" step="0.1"
+      inputmode="decimal" placeholder="Ex.: 15">
+
+    <label for="cc-lab-glicemia">
+      Glicemia fictícia (mg/dL)
+    </label>
+    <input id="cc-lab-glicemia"
+      type="number" min="0" step="1"
+      inputmode="numeric" placeholder="Ex.: 160">
+
+    <label for="cc-lab-alvo">
+      Meta glicêmica fictícia (mg/dL)
+    </label>
+    <input id="cc-lab-alvo"
+      type="number" min="0" step="1"
+      inputmode="numeric" placeholder="Ex.: 110">
+
+    <label for="cc-lab-sens">
+      Sensibilidade fictícia (mg/dL por unidade)
+    </label>
+    <input id="cc-lab-sens"
+      type="number" min="0.1" step="0.1"
+      inputmode="decimal" placeholder="Ex.: 50">
+
+    <button id="cc-lab-calcular" type="button">
+      Simular cálculo
+    </button>
+
+    <div id="cc-lab-resultado"
+      role="status" aria-live="polite" hidden>
+    </div>
+
+    <p style="font-size:12px;line-height:1.5;
+      color:#687d81;margin-top:16px">
+      O exercício não considera insulina ativa,
+      tendências glicêmicas, atividade física,
+      doenças ou outras variáveis clínicas.
+      Nenhum resultado será salvo no diário.
+    </p>
+  `;
+
+  main.appendChild(secao);
+
+  const get = id => document.getElementById(id);
+
+  // Acrescenta a opção ao menu Ajustes.
+  const menu = get('cc-submenu');
+  const botaoAjustes = document.querySelector(
+    '#cc-bottom [data-group="ajustes"]'
+  );
+
+  function abrirBolus() {
+    document.querySelectorAll('main section').forEach(s => {
+      s.hidden = s !== secao;
+    });
+
+    secao.hidden = false;
+
+    document.querySelectorAll(
+      '#cc-bottom button'
+    ).forEach(b => {
+      b.classList.toggle('active',
+        b === botaoAjustes);
+    });
+
+    if (menu) menu.hidden = true;
+    window.scrollTo(0, 0);
+  }
+
+  if (botaoAjustes && menu) {
+    botaoAjustes.addEventListener('click', () => {
+      if (menu.hidden) return;
+
+      if (menu.querySelector('#cc-abrir-bolus')) {
+        return;
+      }
+
+      const botao = document.createElement('button');
+      botao.id = 'cc-abrir-bolus';
+      botao.type = 'button';
+      botao.textContent = 'Bolus experimental';
+      botao.addEventListener('click', abrirBolus);
+      menu.appendChild(botao);
+    });
+  }
+
+  // A simulação só aceita valores fictícios válidos.
+  const campos = [
+    'cc-lab-carb',
+    'cc-lab-razao',
+    'cc-lab-glicemia',
+    'cc-lab-alvo',
+    'cc-lab-sens'
+  ];
+
+  const resultado = get('cc-lab-resultado');
+
+  campos.forEach(id => {
+    get(id).addEventListener('input', () => {
+      resultado.hidden = true;
+    });
+  });
+
+  get('cc-lab-calcular').addEventListener('click', () => {
+    const textos = campos.map(id =>
+      get(id).value.trim()
+    );
+
+    const valores = textos.map(t =>
+      Number(t.replace(',', '.'))
+    );
+
+    const invalidos =
+      textos.some(t => t === '') ||
+      valores.some(v => !Number.isFinite(v)) ||
+      valores[0] < 0 ||
+      valores[1] <= 0 ||
+      valores[2] < 0 ||
+      valores[3] < 0 ||
+      valores[4] <= 0;
+
+    if (invalidos) {
+      alert(
+        'Preencha todos os campos fictícios ' +
+        'com números válidos. Relação e ' +
+        'sensibilidade devem ser maiores que zero.'
+      );
+      resultado.hidden = true;
+      return;
+    }
+
+    const [
+      carboidratos,
+      relacao,
+      glicemia,
+      alvo,
+      sensibilidade
+    ] = valores;
+
+    const parcelaAlimentar = carboidratos / relacao;
+    const parcelaCorrecao =
+      (glicemia - alvo) / sensibilidade;
+
+    const soma = parcelaAlimentar + parcelaCorrecao;
+
+    const fmt = n => n.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    resultado.innerHTML = `
+      <strong>
+        Exercício matemático — não é dose de insulina
+      </strong>
+
+      <p>
+        Parcela alimentar fictícia:
+        ${fmt(parcelaAlimentar)}
+      </p>
+
+      <p>
+        Parcela de correção algébrica:
+        ${fmt(parcelaCorrecao)}
+      </p>
+
+      <p>
+        <strong>
+          Soma algébrica: ${fmt(soma)}
+        </strong>
+      </p>
+
+      <p style="font-size:12px">
+        Valor abstrato, não aplicável.
+        Não arredondar, prescrever ou administrar
+        insulina a partir deste resultado.
+      </p>
+    `;
+
+    resultado.hidden = false;
+  });
+})();
+</script>
+<!-- Fim da correção V3.2 -->
 </body>
 </html>
